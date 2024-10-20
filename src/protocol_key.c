@@ -88,7 +88,7 @@ bool send_external_ip_address(meshlink_handle_t *mesh, node_t *to) {
 		return true;
 	}
 
-	return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s", REQ_KEY, mesh->self->name, to->name, REQ_EXTERNAL, mesh->self->external_ip_address);
+	return send_request(mesh, to->nexthop->connection, NULL, "%d %s %s %d %s %s", REQ_KEY, mesh->self->name, to->name, REQ_EXTERNAL, mesh->self->external_ip_address, mesh->myport);
 }
 
 bool send_canonical_address(meshlink_handle_t *mesh, node_t *to) {
@@ -302,24 +302,23 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 	}
 
 	case REQ_EXTERNAL: {
-		logger(mesh, MESHLINK_ERROR, "Got %s from %s with data: %s", "REQ_EXTERNAL", from->name, request);
+		char ip[MAX_STRING_SIZE];
+		logger(mesh, MESHLINK_DEBUG, "Got %s from %s with data: %s", "REQ_EXTERNAL", from->name, request);
 
-		// char exter[MAX_STRING_SIZE];
+		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, ip) != 1) {
+			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_EXTERNAL", from->name, request);
+			return true;
+		}
 
-		// if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING " " MAX_STRING, host, port) != 2) {
-		// 	logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_CANONICAL", from->name, "invalid canonical address");
-		// 	return true;
-		// }
+		char *external_ip_address;
+		xasprintf(&external_ip_address, "%s", ip);
 
-		// char *canonical_address;
-		// xasprintf(&canonical_address, "%s %s", host, port);
+		if(mesh->log_level <= MESHLINK_DEBUG && (!from->external_ip_address || strcmp(from->external_ip_address, external_ip_address))) {
+			logger(mesh, MESHLINK_DEBUG, "Updating external IP address of %s to %s", from->name, external_ip_address);
+		}
 
-		// if(mesh->log_level <= MESHLINK_DEBUG && (!from->canonical_address || strcmp(from->canonical_address, canonical_address))) {
-		// 	logger(mesh, MESHLINK_DEBUG, "Updating canonical address of %s to %s", from->name, canonical_address);
-		// }
-
-		// free(from->canonical_address);
-		// from->canonical_address = canonical_address;
+		free(from->external_ip_address);
+		from->external_ip_address = external_ip_address;
 		return true;
 	}
 
