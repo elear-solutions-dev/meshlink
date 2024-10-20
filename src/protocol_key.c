@@ -303,15 +303,16 @@ static bool req_key_ext_h(meshlink_handle_t *mesh, connection_t *c, const char *
 
 	case REQ_EXTERNAL: {
 		char ip[MAX_STRING_SIZE];
+		char port[MAX_STRING_SIZE];
 		logger(mesh, MESHLINK_DEBUG, "Got %s from %s with data: %s", "REQ_EXTERNAL", from->name, request);
 
-		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING, ip) != 1) {
+		if(sscanf(request, "%*d %*s %*s %*d " MAX_STRING " " MAX_STRING, ip, port) != 2) {
 			logger(mesh, MESHLINK_ERROR, "Got bad %s from %s: %s", "REQ_EXTERNAL", from->name, request);
 			return true;
 		}
 
 		char *external_ip_address;
-		xasprintf(&external_ip_address, "%s", ip);
+		xasprintf(&external_ip_address, "%s %s", ip, port);
 
 		if(mesh->log_level <= MESHLINK_DEBUG && (!from->external_ip_address || strcmp(from->external_ip_address, external_ip_address))) {
 			logger(mesh, MESHLINK_DEBUG, "Updating external IP address of %s to %s", from->name, external_ip_address);

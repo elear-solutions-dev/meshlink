@@ -347,8 +347,8 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 		char *port = strchr(host, ' ');
 
 		if(port) {
-			logger(mesh, MESHLINK_WARNING, "Found external IP host: %s and port %s\n", host, port);
 			*port++ = 0;
+			logger(mesh, MESHLINK_WARNING, "Using external IP host: %s and port %s\n", host, port);
 			*sa_buf = str2sockaddr_random(mesh, host, port);
 			*sa = sa_buf;
 
