@@ -341,14 +341,14 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 
 	/* Else, if we have a external IP address, try this once every batch */
 	if(mesh->udp_choice == 1 && n->external_ip_address) {
-		logger(mesh, MESHLINK_WARNING, "Trying the external IP address...\n");
+		logger(mesh, MESHLINK_DEBUG, "Trying the external IP address...\n");
 
 		char *host = xstrdup(n->external_ip_address);
 		char *port = strchr(host, ' ');
 
 		if(port) {
 			*port++ = 0;
-			logger(mesh, MESHLINK_WARNING, "Using external IP host: %s and port %s\n", host, port);
+			logger(mesh, MESHLINK_DEBUG, "Using external IP host: %s and port %s\n", host, port);
 			*sa_buf = str2sockaddr_random(mesh, host, port);
 			*sa = sa_buf;
 
@@ -357,7 +357,7 @@ static void choose_udp_address(meshlink_handle_t *mesh, const node_t *n, const s
 				goto check_socket;
 			}
 		} else {
-			logger(mesh, MESHLINK_WARNING, "Couldn't find port, so skipping external IP address...\n");
+			logger(mesh, MESHLINK_DEBUG, "Couldn't find port, so skipping external IP address...\n");
 		}
 
 		free(host);
