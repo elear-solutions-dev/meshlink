@@ -1657,7 +1657,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 	}
 
 	if(mesh->devclass == DEV_CLASS_BACKBONE) {
-		logger(NULL, MESHLINK_WARNING, "Resolving external IP address as we are a backbone node\n");
+		logger(NULL, MESHLINK_DEBUG, "Resolving external IP address as we are a backbone node\n");
 
 		mesh->self->external_ip_address = meshlink_get_external_address(mesh);
 
@@ -1665,7 +1665,7 @@ meshlink_handle_t *meshlink_open_ex(const meshlink_open_params_t *params) {
 		if(!mesh->self->external_ip_address) {
 			logger(NULL, MESHLINK_WARNING, "Couldn't resolve external IP address, continuing without it...\n");
 		} else {
-			logger(NULL, MESHLINK_WARNING, "Found external IP address: %s\n", mesh->self->external_ip_address);
+			logger(NULL, MESHLINK_INFO, "Found external IP address: %s\n", mesh->self->external_ip_address);
 		}
 	}
 
