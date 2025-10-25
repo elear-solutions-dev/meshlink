@@ -2963,6 +2963,7 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	devtool_trybind_probe();
 
 	bool rval = false;
+	char *saved_external_ip = NULL;  // Initialize to NULL to avoid uninitialized warning
 
 	if(pthread_mutex_lock(&mesh->mutex) != 0) {
 		abort();
@@ -2975,6 +2976,16 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 
 	free(mesh->myport);
 	xasprintf(&mesh->myport, "%d", port);
+
+	// BUG FIX: Preserve external_ip_address before closing network connections
+	// When meshlink_set_port() is called after meshlink_open(), the external_ip_address
+	// gets lost because close_network_connections() deletes mesh->self. This prevents
+	// REQ_EXTERNAL messages from being sent, breaking P2P connectivity.
+	// We preserve the IP part (without port) and will restore it with the new port.
+	if(mesh->self && mesh->self->external_ip_address) {
+		saved_external_ip = xstrdup(mesh->self->external_ip_address);
+		logger(mesh, MESHLINK_DEBUG, "Preserving external IP address: %s", saved_external_ip);
+	}
 
 	/* Close down the network. This also deletes mesh->self. */
 	close_network_connections(mesh);
@@ -2997,9 +3008,20 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 		goto done;
 	}
 
+	// BUG FIX: Restore external_ip_address
+	// After successful network setup, restore the external IP address.
+	if(saved_external_ip && mesh->self) {
+		free(mesh->self->external_ip_address);
+		mesh->self->external_ip_address = saved_external_ip;
+		saved_external_ip = NULL; // Don't free it here, it's now owned by mesh->self
+		logger(mesh, MESHLINK_DEBUG, "Restored external IP address: %s", mesh->self->external_ip_address);
+	}
+
 	/* Rebuild our own list of recent addresses */
-	memset(mesh->self->recent, 0, sizeof(mesh->self->recent));
-	add_local_addresses(mesh);
+	if(mesh->self) {
+		memset(mesh->self->recent, 0, sizeof(mesh->self->recent));
+		add_local_addresses(mesh);
+	}
 
 	/* Write meshlink.conf with the updated port number */
 	write_main_config_files(mesh);
@@ -3007,9 +3029,20 @@ bool meshlink_set_port(meshlink_handle_t *mesh, int port) {
 	rval = config_sync(mesh, "current");
 
 done:
+	// Clean up saved external IP address, it's now owned by mesh->self
+	if(saved_external_ip) {
+		free(saved_external_ip);
+	}
+	
 	pthread_mutex_unlock(&mesh->mutex);
 
-	return rval && meshlink_get_port(mesh) == port;
+	// When port 0 is requested, any assigned port > 0 is success
+	// Otherwise, verify the exact port was set
+	if(port == 0) {
+		return rval && meshlink_get_port(mesh) > 0;
+	} else {
+		return rval && meshlink_get_port(mesh) == port;
+	}
 }
 
 void meshlink_set_invitation_timeout(meshlink_handle_t *mesh, int timeout) {
