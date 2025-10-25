@@ -4500,12 +4500,6 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 		return -1;
 	}
 
-	if(!channel->c) {
-		/* Channel has been closed, connection is NULL */
-		meshlink_errno = MESHLINK_ENETWORK;
-		return -1;
-	}
-
 	// TODO: more finegrained locking.
 	// Ideally we want to put the data into the UTCP connection's send buffer.
 	// Then, preferably only if there is room in the receiver window,
@@ -4521,7 +4515,13 @@ ssize_t meshlink_channel_send(meshlink_handle_t *mesh, meshlink_channel_t *chann
 	if(channel->aio_send) {
 		retval = 0;
 	} else {
-		retval = utcp_send(channel->c, data, len);
+		if(!channel->c) {
+			/* Channel has been closed, connection is NULL */
+			meshlink_errno = MESHLINK_ENETWORK;
+			retval = -1;
+		} else {
+			retval = utcp_send(channel->c, data, len);
+		}
 	}
 
 	pthread_mutex_unlock(&mesh->mutex);
