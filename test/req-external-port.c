@@ -224,8 +224,7 @@ int main(void) {
 
 	// Wait for connection
 	printf("Waiting for nodes to connect...\n");
-	wait_sync_flag(&bar_reachable, 5);
-
+	assert(wait_sync_flag(&bar_reachable, 5));
 	printf("✅ Nodes connected successfully\n");
 
 	// Give more time for REQ_EXTERNAL messages to be exchanged
