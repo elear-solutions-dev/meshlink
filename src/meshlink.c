@@ -1097,8 +1097,11 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 	}
 
 	if(check_port(mesh) == 0) {
-		meshlink_errno = MESHLINK_ENETWORK;
-		return false;
+		// On restricted platforms (iOS, Android), check_port() may fail
+		// Allow fallback to port 0 for automatic OS assignment
+		logger(mesh, MESHLINK_DEBUG, "check_port() failed, allowing port 0 fallback");
+		free(mesh->myport);
+		mesh->myport = xstrdup("0");
 	}
 
 	/* Create a node for ourself */
