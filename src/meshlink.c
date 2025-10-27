@@ -1102,6 +1102,7 @@ static bool meshlink_setup(meshlink_handle_t *mesh) {
 		logger(mesh, MESHLINK_DEBUG, "check_port() failed, allowing port 0 fallback");
 		free(mesh->myport);
 		mesh->myport = xstrdup("0");
+		meshlink_errno = MESHLINK_OK;  // Clear error state since fallback succeeds
 	}
 
 	/* Create a node for ourself */
